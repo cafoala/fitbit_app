@@ -10,11 +10,12 @@ import { outbox } from "file-transfer";
 
 
 let thisDate = new Date();
-let recFilename = `/private/data/RawDataLogger-${thisDate.getFullYear()}${("0" + (thisDate.getMonth() + 1)).slice(-2)}${("0" + (thisDate.getDate())).slice(-2)}.txt`;
+let recFilename = `/private/data/RawDataLogger-${thisDate.getFullYear()}${("0" + (thisDate.getMonth() + 1)).slice(-2)}${("0" + (thisDate.getDate())).slice(-2)}.bin`;
 console.log(recFilename);
 let fileID = null;
 
 let buffer = new ArrayBuffer(8);
+let bytes = new Uint8Array(buffer);
 
 let accel = new Accelerometer();
 let hrm = new HeartRateSensor();
@@ -49,8 +50,9 @@ btnRecord.onclick = function(evt){
     }
     // Close the file
     fs.closeSync(fileID);
-
-   outbox
+    
+    //Send the file to the outbox
+    outbox
      .enqueueFile(recFilename)
      .then((ft) => {
        console.log(`Transfer of ${ft.name} successfully queued.`);
@@ -58,7 +60,8 @@ btnRecord.onclick = function(evt){
      .catch((error) => {
        console.log(`Failed to schedule transfer: ${error}`);
      })
-  } else {
+    
+    } else {
     recording = true;
     btnRecord.text = "Stop";
     
@@ -68,23 +71,36 @@ btnRecord.onclick = function(evt){
     gyro.start();
     
     // Init the file
-    fileID = fs.openSync(recFilename, "a+");
+    fileID = fs.openSync(recFilename, "w+");
     
     // Set callback recording function
-    recFunction = setInterval(refreshData, 1000);
+    recFunction = setInterval(refreshData, 10);
     
    }
 }
+
+// List the stored file
 const dirIter;
 const listDir = fs.listDirSync("/private/data");
 while((dirIter = listDir.next()) && !dirIter.done) {
   console.log(dirIter.value);
+  //remove if necessary
   //fs.unlinkSync(dirIter.value);
   
 }
 
 function refreshData() {
   // Populate ArrayBuffer
+  bytes[0] = thisDate.getTime();
+  bytes[1] = hrm.heartRate ? hrm.heartRate : 0;
+  bytes[2] = accel.x ? accel.x.toFixed(1) : 0;
+  bytes[3] = accel.y ? accel.y.toFixed(1) : 0;
+  bytes[4] = accel.z ? accel.z.toFixed(1) : 0;
+  bytes[5] = gyro.x ? gyro.x.toFixed(1) : 0;
+  bytes[6] = gyro.y ? gyro.y.toFixed(1) : 0;
+  bytes[7] = gyro.z ? gyro.z.toFixed(1) : 0;
+  
+  /*
   buffer[0] = thisDate.getTime();
   buffer[1] = hrm.heartRate ? hrm.heartRate : 0;
   buffer[2] = accel.x ? accel.x.toFixed(1) : 0;
@@ -93,8 +109,21 @@ function refreshData() {
   buffer[5] = gyro.x ? gyro.x.toFixed(1) : 0;
   buffer[6] = gyro.y ? gyro.y.toFixed(1) : 0;
   buffer[7] = gyro.z ? gyro.z.toFixed(1) : 0;
+  */
   
+  //console.log(bytes[0])
+  //console.log(bytes[1])
+  //const typedArray = new Uint32Array(buffer);
+  /*buffer.forEach((item) => {
+    console.log(`item: ${item}`);
+  });*/
   // Write ArrayBuffer to file
   fs.writeSync(fileID, buffer);
 }
 console.log("App code started");
+
+/*const typedArray = new Uint8Array(buffer);
+//const array = Array.from(typedArray);
+typedArray.forEach((item) => {
+  console.log(`item: ${item}`);
+});*/
