@@ -12,9 +12,9 @@ async function processAllFiles() {
     //const payload = await file.text();
     console.log(`file contents: ${payload}`);
     
-    const typedArray = new Uint8Array(payload);
+    const typedArray = new Uint32Array(payload);
     const array = Array.from(typedArray)
-    /*array.forEach((item) => {
+    array.forEach((item) => {
       console.log(`item: ${item}`)
     })
     /*
